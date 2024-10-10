@@ -1,0 +1,72 @@
+type: update
+name: Prometheus Server Upgrade 
+baseUrl: https://raw.githubusercontent.com/Aureliolo/Jelastic-Grafana-Prometheus/main
+logo: images/grafana_logo.png
+
+targetNodes:
+  nodeGroup: [cp]
+ 
+onInstall:
+  - stop-server
+  - backup-current
+  - download-new
+  - set-permissions
+  - restart
+
+actions:
+  stop-server:
+    - log: Stops Services
+    - cmd[cp]: |-
+        systemctl stop grafana
+        systemctl stop prometheus
+      user: root
+      sayYes: true
+
+  backup-current:
+    - log: Backup existing files and config
+    - cmd[cp]: |-
+        mkdir -p /tmp/prometheus && cd /tmp/prometheus
+        cp -a /usr/local/bin/{prometheus,promtool} ./
+        cp -a /var/lib/prometheus/. ./var-lib-prometheus
+        cp -a /etc/prometheus/. ./etc-prometheus
+        cd ../
+        tar -zcvf "prometheus-backup-$(date +%F-%H_%M).tar.gz" -C /tmp/prometheus . &>> /var/log/run.log
+        mv prometheus-backup* /opt/prometheus/
+        chown prometheus:prometheus /opt/prometheus/prometheus-backup*
+        cd ~/
+        rm -rf /tmp/prometheus
+      user: root
+      sayYes: true
+
+  download-new:
+    - log: Download and Install new Prometheus Package while keeping config
+    - cmd[cp]: |-
+        mkdir -p /tmp/prometheus && cd /tmp/prometheus
+        curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest \
+        | grep browser_download_url \
+        | grep linux-amd64 \
+        | cut -d '"' -f 4 \
+        | wget -qi -
+        tar xvf prometheus*.tar.gz &>> /var/log/run.log
+        cd prometheus*/
+        mv prometheus promtool /usr/local/bin/
+        mv consoles/ console_libraries/ /etc/prometheus/
+        cd ~/
+        rm -rf /tmp/prometheus
+      user: root
+      sayYes: true
+
+  set-permissions:
+    - log: reset permissions if lost
+    - cmd[cp]: |-
+        for i in rules rules.d files_sd console_libraries consoles .htpasswd prometheus.yml; do chown -R prometheus:prometheus /etc/prometheus/${i}; done
+        for i in rules rules.d files_sd console_libraries consoles .htpasswd prometheus.yml; do chmod -R 775 /etc/prometheus/${i}; done
+        chown prometheus:prometheus /usr/local/bin/{prometheus,promtool}
+      user: root
+      sayYes: true
+      
+  restart:
+    - api [cp]: jelastic.environment.control.RestartNodes 
+
+success:
+  text: text/success-update-prometheus.md

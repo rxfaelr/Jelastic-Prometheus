@@ -1,0 +1,108 @@
+type: update
+name: Install Prometheus
+baseUrl: https://raw.githubusercontent.com/Aureliolo/Jelastic-Grafana-Prometheus/main
+skipNodeEmails: true
+
+onInstall:
+  - prepare-user
+  - download-install-prometheus
+  - configure-prometheus
+  - add-to-systemd
+  - enable-start-systemd
+  - configure-nginx
+
+actions:
+  prepare-user:
+    - log: Add User and Group to Centos
+    - cmd[cp]: |-
+        groupadd --system prometheus &>> /var/log/run.log
+        useradd -s /sbin/nologin --system -g prometheus prometheus &>> /var/log/run.log
+        mkdir /var/lib/prometheus
+        mkdir /opt/prometheus
+        echo /opt/prometheus >> /etc/jelastic/redeploy.conf
+        for i in rules rules.d files_sd; do sudo mkdir -p /etc/prometheus/${i}; done
+        echo /var/lib/prometheus >> /etc/jelastic/redeploy.conf
+        echo /etc/prometheus >> /etc/jelastic/redeploy.conf
+        usermod -a -G prometheus jelastic
+      user: root
+      sayYes: true
+
+  download-install-prometheus:
+    - log: Download and Install Prometheus Package
+    - cmd[cp]: |-
+        mkdir -p /tmp/prometheus && cd /tmp/prometheus
+        curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest \
+        | grep browser_download_url \
+        | grep linux-amd64 \
+        | cut -d '"' -f 4 \
+        | wget -qi -
+        tar xvf prometheus*.tar.gz
+        cd prometheus*/
+        mv prometheus promtool /usr/local/bin/
+        echo /usr/local/bin/promtool >> /etc/jelastic/redeploy.conf
+        mv prometheus.yml  /etc/prometheus/prometheus.yml
+        mv consoles/ console_libraries/ /etc/prometheus/
+        cd ~/
+        rm -rf /tmp/prometheus
+      user: root
+      sayYes: true
+
+  configure-prometheus:
+    - log: Configure Prometheus permissions
+    - cmd[cp]: |-
+        for i in rules rules.d files_sd console_libraries consoles .htpasswd prometheus.yml; do chown -R prometheus:prometheus /etc/prometheus/${i}; done
+        for i in rules rules.d files_sd console_libraries consoles .htpasswd prometheus.yml; do chmod -R 775 /etc/prometheus/${i}; done
+        chown -R prometheus:prometheus /var/lib/prometheus/
+        chown -R prometheus:prometheus /opt/prometheus/
+        chown prometheus:prometheus /usr/local/bin/{prometheus,promtool}
+      user: root
+      sayYes: true
+
+  add-to-systemd:
+    - log: Add Systemd Unit
+    - cmd[cp]: |-
+        echo "[Unit]" >> /etc/systemd/system/prometheus.service
+        echo "Description=Prometheus" >> /etc/systemd/system/prometheus.service
+        echo "Documentation=https://prometheus.io/docs/introduction/overview/" >> /etc/systemd/system/prometheus.service
+        echo "Wants=network-online.target" >> /etc/systemd/system/prometheus.service
+        echo "After=network-online.target" >> /etc/systemd/system/prometheus.service
+        echo "" >> /etc/systemd/system/prometheus.service
+        echo "[Service]" >> /etc/systemd/system/prometheus.service
+        echo "Type=simple" >> /etc/systemd/system/prometheus.service
+        echo "User=prometheus" >> /etc/systemd/system/prometheus.service
+        echo "Group=prometheus" >> /etc/systemd/system/prometheus.service
+        echo 'ExecReload=/bin/kill -HUP $MAINPID' >> /etc/systemd/system/prometheus.service
+        echo 'ExecStart=/usr/local/bin/prometheus \' >> /etc/systemd/system/prometheus.service
+        echo '  --config.file=/etc/prometheus/prometheus.yml \' >> /etc/systemd/system/prometheus.service
+        echo '  --storage.tsdb.path=/var/lib/prometheus \' >> /etc/systemd/system/prometheus.service
+        echo '  --web.console.templates=/etc/prometheus/consoles \' >> /etc/systemd/system/prometheus.service
+        echo '  --web.console.libraries=/etc/prometheus/console_libraries \' >> /etc/systemd/system/prometheus.service
+        echo '  --web.listen-address=0.0.0.0:9090 \' >> /etc/systemd/system/prometheus.service
+        echo '  --web.external-url=http://localhost:9090/prometheus/' >> /etc/systemd/system/prometheus.service
+        echo "" >> /etc/systemd/system/prometheus.service
+        echo "SyslogIdentifier=prometheus" >> /etc/systemd/system/prometheus.service
+        echo "Restart=always" >> /etc/systemd/system/prometheus.service
+        echo "" >> /etc/systemd/system/prometheus.service
+        echo "[Install]" >> /etc/systemd/system/prometheus.service
+        echo "WantedBy=multi-user.target" >> /etc/systemd/system/prometheus.service
+      user: root
+      sayYes: true
+
+  enable-start-systemd:
+    - log: Enable and start Systemd Unit
+    - cmd[cp]: |-
+        systemctl daemon-reload &>> /var/log/run.log
+        systemctl start prometheus &>> /var/log/run.log
+        systemctl enable prometheus &>> /var/log/run.log
+        echo /etc/systemd/system/prometheus.service >> /etc/jelastic/redeploy.conf
+      user: root
+      sayYes: true
+
+
+  configure-nginx:
+    - log: Setup basic auth
+    - cmd[cp]: |-
+        PASS=${settings.prom_pass}
+        printf "Prometheus:$(openssl passwd -crypt $PASS)\n" >> /etc/prometheus/.htpasswd
+      user: root
+      sayYes: true

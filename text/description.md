@@ -1,0 +1,1 @@
+Prometheus is a monitoring platform that collects metrics from monitored targets, by scraping metrics HTTP endpoints on these targets.
