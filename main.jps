@@ -1,6 +1,6 @@
 type: install 
 name: Prometheus
-baseUrl: https://raw.githubusercontent.com/Aureliolo/Jelastic-Grafana-Prometheus/main
+baseUrl: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main
 logo: images/prometheus_logo.png
 homepage: https://prometheus.io/
 description: 
@@ -103,7 +103,7 @@ actions:
 addons:
   - id: update-prometheus
     name: Update Prometheus Server
-    logo: https://raw.githubusercontent.com/Aureliolo/Jelastic-Grafana-Prometheus/main/images/prometheus_logo.png
+    logo: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/images/prometheus_logo.png
     description: Update of Prometheus
     buttons:
       - caption: Update
@@ -114,7 +114,7 @@ addons:
     actions:
       update:
         - log: launching prometheus update JPS
-        - install: https://raw.githubusercontent.com/Aureliolo/Jelastic-Grafana-Prometheus/main/scripts/update-prometheus.jps
+        - install: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/scripts/update-prometheus.jps
           skipEmail: true
 success:
   email: text/success-email.md
