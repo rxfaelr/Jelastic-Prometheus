@@ -37,17 +37,5 @@ if (bEndPointsEnabled) {
         }
     }
 
-    sSuccessText = "Seu ambiente Prometheus foi instalado com sucesso!\n" +
-    "Dados de acesso:\n" +
-    "URL do painel administrativo: " +
-    "node" + "${nodes.nginxphp[0].id}-" + "${env.domain}:" + oResp.object.publicPort + "\n" +
-    "Usuário: Prometheus\n" +
-    "Senha: " + "${globals.PROM_PASS}";
-
 }
 
-return {
-    result: "success",
-    message: sSuccessText,
-    email: sSuccessText
-};
