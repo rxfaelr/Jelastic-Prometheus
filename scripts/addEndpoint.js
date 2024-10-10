@@ -4,7 +4,6 @@ var PROTOCOL = getParam("protocol", "TCP"),
     APPID = getParam("TARGET_APPID"),
     SESSION = getParam("session"),
     bEndPointsEnabled,
-    sSuccessText = "",
     nNodesCount,
     oEnvInfo,
     oResp,
@@ -37,5 +36,17 @@ if (bEndPointsEnabled) {
         }
     }
 
+    const sSuccessText = "Seu ambiente Prometheus foi instalado com sucesso!\n" +
+    "Dados de acesso:\n" +
+    "URL do painel administrativo: " +
+    "node" + "${nodes.nginxphp[0].id}-" + "${env.domain}:" + oResp.object.publicPort + "\n" +
+    "Usuário: Prometheus\n" +
+    "Senha: " + "${globals.PROM_PASS}";
+
 }
 
+return {
+    result: "success",
+    message: sSuccessText,
+    email: sSuccessText
+};
