@@ -37,7 +37,7 @@ if (bEndPointsEnabled) {
         }
     }
 
-    sSuccessText = "${nodes.nginxphp[0].id}" + "${env.domain}" + oResp.object.publicPort + "";
+    sSuccessText = "node"+"${nodes.nginxphp[0].id}-" + "${env.domain}" + oResp.object.publicPort + "";
 } else {
     sSuccessText = "${nodes.nginxphp[0].id}" + "${env.domain}" + oResp.object.publicPort + "";
 }
