@@ -1,14 +1,8 @@
-**Grafana URL**: [https://${env.domain}/](https://${env.domain}/)
-
-Login: 
-(please make sure to change password)
-
-**Username**: admin  
-**Password**: admin
+Seu ambiente Prometheus foi instalado com sucesso! Abaixo seguem os dados de acesso:
 
 
-***Prometheus*** (if selected)
+***Prometheus***
 
-**Admin Panel**: [https://${env.domain}/prometheus](https://${env.domain}/prometheus)  
+**Admin Panel**: [https://"node"+"${nodes.nginxphp[0].id}-" + "${env.domain}:" + oResp.object.publicPort]() 
 **Username**: Prometheus  
 **Password**: ${globals.PROM_PASS} 

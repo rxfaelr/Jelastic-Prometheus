@@ -1,9 +1,9 @@
-type: install 
+type: install
 name: Prometheus
 baseUrl: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main
 logo: images/prometheus_logo.png
 homepage: https://prometheus.io/
-description: 
+description:
   text: /text/description.md
   short: Instllation of Prometheus
 
@@ -14,17 +14,17 @@ skipNodeEmails: true
 
 settings:
   fields:
-    - name: prometheus
-      caption: Install Prometheus
-      value: true
-      hideLabel: false
-      hidden: false      
-    - name: ssl
-      type: checkbox
-      caption: Install Let's Encrypt addon + public IPv4/IPv6 for Custom Domain
-      value: false
-      hideLabel: false
-      hidden: false
+  - name: prometheus
+    caption: Install Prometheus
+    value: true
+    hideLabel: false
+    hidden: false
+  - name: ssl
+    type: checkbox
+    caption: Install Let's Encrypt addon + public IPv4/IPv6 for Custom Domain
+    value: false
+    hideLabel: false
+    hidden: false
 
 globals:
   PROM_PASS: ${fn.password(10)}
@@ -40,82 +40,83 @@ nodes:
   isSLBAccessEnabled: true
 
 onInstall:
-  - ssl
-  - install-prometheus
-  - change-nginx-conf
-    - installAddon:
-        id: update-prometheus
-        nodeGroup: cp
- 
+- ssl
+- install-prometheus
+- change-nginx-conf
+- installAddon:
+    id: update-prometheus
+    nodeGroup: cp
+- executeScript:
+  type: js
+  script: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/scripts/addEndpoint.js
+  params:
+    nodeGroup: cp
+    name: prometheus
+    port: 9090
+
 actions:
   ssl:
-    - log: Configure SSL and public IP if enabled
-    - if ('${settings.ssl}' === 'false'):
-        env.control.EditEnvSettings:
-          settings:
-            sslstate: true 
-    - else:
-        - api: 
-          - method: environment.binder.attachextip
-            params:
-              nodeid: ${nodes.cp[0].id}
-              nodeGroup: cp
-              type: ipv6
-        - install: https://github.com/jelastic-jps/lets-encrypt/blob/master/manifest.jps?_r=${fn.random}
-          nodeGroup: cp
-          skipEmail: true
-          settings:
-            customDomains: ${env.domain}
+  - log: Configure SSL and public IP if enabled
+  - if ('${settings.ssl}' === 'false'):
+      env.control.EditEnvSettings:
+        settings:
+          sslstate: true
+  - else:
+    - install: https://github.com/jelastic-jps/lets-encrypt/blob/master/manifest.jps?_r=${fn.random}
+      nodeGroup: cp
+      skipEmail: true
+      settings:
+        customDomains: ${env.domain}
 
   install-prometheus:
-    - log: Install Prometheus
-      - install: ${baseUrl}/scripts/install-prometheus.jps
-        settings:
-          prom_pass: ${globals.PROM_PASS}
-        skipEmail: true 
+  - log: Install Prometheus
+  - install: ${baseUrl}/scripts/install-prometheus.jps
+    settings:
+      prom_pass: ${globals.PROM_PASS}
+    skipEmail: true
 
   change-nginx-conf:
-    - log: make nginx serve prometheus over proxypass
-    - if ('${settings.ssl}' === 'false'):
-      - cmd[cp]: |-
-          sed -i "72i location /prometheus {"  /etc/nginx/nginx.conf
-          sed -i "73i    auth_basic "Prometheus";"  /etc/nginx/nginx.conf
-          sed -i "74i    auth_basic_user_file /etc/prometheus/.htpasswd;"  /etc/nginx/nginx.conf
-          sed -i "75i    proxy_pass http://localhost:9090/prometheus;"  /etc/nginx/nginx.conf
-          sed -i "76i   }"  /etc/nginx/nginx.conf
-        user: root
-    - else:
-      - cmd[cp]: |-
-          sed -i "72i location /prometheus {"  /etc/nginx/nginx.conf
-          sed -i "73i    auth_basic "Prometheus";"  /etc/nginx/nginx.conf
-          sed -i "74i    auth_basic_user_file /etc/prometheus/.htpasswd;"  /etc/nginx/nginx.conf
-          sed -i "75i    proxy_pass http://localhost:9090/prometheus;"  /etc/nginx/nginx.conf
-          sed -i "76i   }"  /etc/nginx/nginx.conf
-          sed -i '29d' /etc/nginx/conf.d/ssl.conf
-          sed -i "27i location /prometheus {"  /etc/nginx/conf.d/ssl.conf
-          sed -i "28i    auth_basic "Prometheus";"  /etc/nginx/conf.d/ssl.conf
-          sed -i "29i    auth_basic_user_file /etc/prometheus/.htpasswd;"  /etc/nginx/conf.d/ssl.conf
-          sed -i "30i    proxy_pass http://localhost:9090/prometheus;"  /etc/nginx/conf.d/ssl.conf
-          sed -i "31i   }"  /etc/nginx/conf.d/ssl.conf
-        user: root
-    - api [cp]: jelastic.environment.control.RestartNodes 
+  - log: make nginx serve prometheus over proxypass
+  - if ('${settings.ssl}' === 'false'):
+    - cmd[cp]: |-
+        sed -i "72i location /prometheus {"  /etc/nginx/nginx.conf
+        sed -i "73i    auth_basic "Prometheus";"  /etc/nginx/nginx.conf
+        sed -i "74i    auth_basic_user_file /etc/prometheus/.htpasswd;"  /etc/nginx/nginx.conf
+        sed -i "75i    proxy_pass https://localhost:9090/prometheus;"  /etc/nginx/nginx.conf
+        sed -i "76i   }"  /etc/nginx/nginx.conf
+      user: root
+  - else:
+    - cmd[cp]: |-
+        sed -i "72i location /prometheus {"  /etc/nginx/nginx.conf
+        sed -i "73i    auth_basic "Prometheus";"  /etc/nginx/nginx.conf
+        sed -i "74i    auth_basic_user_file /etc/prometheus/.htpasswd;"  /etc/nginx/nginx.conf
+        sed -i "75i    proxy_pass https://${env.domain}:9090/prometheus;"  /etc/nginx/nginx.conf
+        sed -i "76i   }"  /etc/nginx/nginx.conf
+        sed -i '29d' /etc/nginx/conf.d/ssl.conf
+        sed -i "27i location /prometheus {"  /etc/nginx/conf.d/ssl.conf
+        sed -i "28i    auth_basic "Prometheus";"  /etc/nginx/conf.d/ssl.conf
+        sed -i "29i    auth_basic_user_file /etc/prometheus/.htpasswd;"  /etc/nginx/conf.d/ssl.conf
+        sed -i "30i    proxy_pass https://${env.domain}:9090/prometheus;"  /etc/nginx/conf.d/ssl.conf
+        sed -i "31i   }"  /etc/nginx/conf.d/ssl.conf
+      user: root
+  - api [cp]: jelastic.environment.control.RestartNodes
 
 addons:
-  - id: update-prometheus
-    name: Update Prometheus Server
-    logo: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/images/prometheus_logo.png
-    description: Update of Prometheus
-    buttons:
-      - caption: Update
-        action: update
-        loadingText: Updating...
-        confirmText: Do you want to update Prometheus?
-        successText: Prometheus has been successfully updated!
-    actions:
-      update:
-        - log: launching prometheus update JPS
-        - install: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/scripts/update-prometheus.jps
-          skipEmail: true
+- id: update-prometheus
+  name: Update Prometheus Server
+  logo: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/images/prometheus_logo.png
+  description: Update of Prometheus
+  buttons:
+  - caption: Update
+    action: update
+    loadingText: Updating...
+    confirmText: Do you want to update Prometheus?
+    successText: Prometheus has been successfully updated!
+  actions:
+    update:
+    - log: launching prometheus update JPS
+    - install: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/scripts/update-prometheus.jps
+      skipEmail: true
 success:
   email: text/success-email.md
   text: text/success-text.md

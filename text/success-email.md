@@ -1,14 +1,8 @@
-Please find the login detail for Grafana as well as Prometheus (if it was selected) here:
-
-***Grafana***
-
-**Admin Panel**: [https://${env.domain}](https://${env.domain})  
-**Username**: admin  
-**Password**: admin 
+Seu ambiente Prometheus foi instalado com sucesso! Abaixo seguem os dados de acesso:
 
 
-***Prometheus*** (if selected)
+***Prometheus***
 
-**Admin Panel**: [https://${env.domain}/prometheus](https://${env.domain}/prometheus)  
+**Admin Panel**: [https://"node"+"${nodes.nginxphp[0].id}-" + "${env.domain}:" + oResp.object.publicPort]() 
 **Username**: Prometheus  
 **Password**: ${globals.PROM_PASS} 
