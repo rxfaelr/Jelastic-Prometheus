@@ -47,6 +47,4 @@ if (bEndPointsEnabled) {
 
 return {
     result: "success",
-    message: 'text/success.md',
-    email: 'text/success.md',
 };
