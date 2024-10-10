@@ -3,6 +3,6 @@ Seu ambiente Prometheus foi instalado com sucesso! Abaixo seguem os dados de ace
 
 ***Prometheus***
 
-**Admin Panel**: [${nodes.cp.first.(endpoints)}]
+**Admin Panel**: ${globals.ENDPOINT}
 **Username**: Prometheus  
 **Password**: ${globals.PROM_PASS} 
