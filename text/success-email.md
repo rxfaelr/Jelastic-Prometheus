@@ -3,6 +3,8 @@ Seu ambiente Prometheus foi instalado com sucesso! Abaixo seguem os dados de ace
 
 ***Prometheus***
 
-**Admin Panel**: ${globals.ENDPOINT}
+**Admin Panel**: node${nodes.nginxphp[0].id}-${env.domain} ${nodes.nginxphp.endpoints[0].publicPort}
+
 **Username**: Prometheus  
+
 **Password**: ${globals.PROM_PASS} 
