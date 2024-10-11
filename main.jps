@@ -41,19 +41,16 @@ nodes:
   isSLBAccessEnabled: true
 
 onInstall:
+- environment.control.AddEndpoint [${nodes.cp[0].id}]:
+  - privatePort: 9090
+    protocol: TCP
+    name: PROMETHEUS
 - ssl
 - install-prometheus
 - change-nginx-conf
 - installAddon:
     id: update-prometheus
     nodeGroup: cp
-- executeScript:
-  type: js
-  script: https://raw.githubusercontent.com/rxfaelr/Jelastic-Prometheus/main/scripts/addEndpoint.js
-  params:
-    nodeGroup: cp
-    name: prometheus
-    port: 9090
 
 actions:
   ssl:
